@@ -114,6 +114,15 @@ body {
   background: #dc2626;
 }
 
+.btn-grey {
+  background: #9ca3af;
+  color: white;
+}
+
+.btn-grey:hover:not(:disabled) {
+  background: #6b7280;
+}
+
 .btn-sm {
   padding: 0.4rem 0.8rem;
   font-size: 0.85rem;
@@ -280,6 +289,45 @@ body {
   transform: scale(1.1);
 }
 
+.point-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+}
+
+.point-checkmark {
+  color: #10b981;
+  font-size: 16px;
+  font-weight: bold;
+}
+
+
+.points-summary {
+  margin-top: auto;
+  padding-top: 1rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.clear-action {
+  margin-top: 0.5rem;
+  text-align: center;
+}
+
+.clear-all-link {
+  color: #3b82f6;
+  text-decoration: underline;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.clear-all-link:hover {
+  color: #2563eb;
+  text-decoration: none;
+}
+
 .rectangles-summary {
   margin-top: auto;
   padding-top: 1rem;
@@ -318,7 +366,34 @@ body {
 .page-info {
   font-weight: 500;
   color: #1f2937;
-  min-width: 120px;
+  margin-right: 1rem;
+}
+
+.page-navigation {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.page-jump {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.page-input {
+  width: 60px;
+  padding: 0.25rem 0.5rem;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  text-align: center;
+}
+
+.page-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
 }
 
 .keyboard-hint {
@@ -354,6 +429,15 @@ body {
   background: transparent;
   z-index: 2;
   max-width: 800px;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  -webkit-user-drag: none;
+  -khtml-user-drag: none;
+  -moz-user-drag: none;
+  -o-user-drag: none;
+  user-drag: none;
 }
 
 .drawing-hint {

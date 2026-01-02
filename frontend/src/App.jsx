@@ -24,14 +24,10 @@ function App() {
   const [pdfDoc, setPdfDoc] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
-  const [rectangles, setRectangles] = useState([]); // Array of { x, y, width, height, pageNum, xPoints, yPoints, widthPoints, heightPoints }
+  const [jumpToPage, setJumpToPage] = useState('');
+  const [signaturePoints, setSignaturePoints] = useState([]); // Array of { x, y, xPoints, yPoints, pageNum, id }
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
-  const drawingStateRef = useRef({
-    isDrawing: false,
-    currentRect: null,
-    startPos: null
-  });
   const [pageScale, setPageScale] = useState(1);
   const [pageDimensions, setPageDimensions] = useState({ width: 0, height: 0 });
 
@@ -85,14 +81,7 @@ function App() {
       setPdfDoc(pdf);
       setTotalPages(pdf.numPages);
       setCurrentPage(1);
-      setRectangles([]);
-
-      // Reset drawing state
-      drawingStateRef.current = {
-        isDrawing: false,
-        currentRect: null,
-        startPos: null
-      };
+      setSignaturePoints([]);
 
       console.log(`PDF loaded successfully: ${pdf.numPages} pages`);
 
@@ -105,7 +94,7 @@ function App() {
       setPdfDoc(null);
       setTotalPages(0);
       setCurrentPage(1);
-      setRectangles([]);
+      setSignaturePoints([]);
 
       // Show user-friendly error message
       let errorMessage = 'Failed to load PDF. ';
@@ -132,17 +121,13 @@ function App() {
     setPdfDoc(null);
     setCurrentPage(1);
     setTotalPages(0);
-    setRectangles([]);
-    setCurrentRect(null);
-    setIsDrawing(false);
-    setStartPos(null);
+    setSignaturePoints([]);
   };
 
   // Handle page change
   const goToPage = (pageNum) => {
     if (pageNum >= 1 && pageNum <= totalPages) {
       setCurrentPage(pageNum);
-      setCurrentRect(null);
     }
   };
 
@@ -164,22 +149,7 @@ function App() {
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, [pdfDoc, currentPage, totalPages]);
 
-  // Get top-left corner coordinates
-  const getTopLeftCoordinates = (x1, y1, x2, y2) => {
-    const minX = Math.min(x1, x2);
-    const minY = Math.min(y1, y2);
-    const width = Math.abs(x2 - x1);
-    const height = Math.abs(y2 - y1);
-    
-    return {
-      x: Math.round(minX),
-      y: Math.round(minY),
-      width: Math.round(width),
-      height: Math.round(height)
-    };
-  };
-
-  // Canvas mouse handlers for drawing rectangles
+  // Get canvas coordinates from mouse event
   const getCanvasCoordinates = (e) => {
     try {
       const canvas = canvasRef.current;
@@ -207,85 +177,51 @@ function App() {
     }
   };
 
-  const handleMouseDown = (e) => {
-    const pos = getCanvasCoordinates(e);
-    if (!pos) return;
-
-    drawingStateRef.current.isDrawing = true;
-    drawingStateRef.current.startPos = pos;
-    drawingStateRef.current.currentRect = { x1: pos.x, y1: pos.y, x2: pos.x, y2: pos.y };
-
-    // Trigger immediate draw
-    drawCanvas();
-  };
-
-  const handleMouseMove = (e) => {
-    if (!drawingStateRef.current.isDrawing || !drawingStateRef.current.startPos) return;
+  // Handle click on canvas to place signature point
+  const handleCanvasClick = (e) => {
+    e.preventDefault(); // Prevent any default browser behavior
+    e.stopPropagation(); // Stop event bubbling
 
     const pos = getCanvasCoordinates(e);
     if (!pos) return;
 
-    drawingStateRef.current.currentRect = {
-      x1: drawingStateRef.current.startPos.x,
-      y1: drawingStateRef.current.startPos.y,
-      x2: pos.x,
-      y2: pos.y
+    // Create signature point
+    const signaturePoint = {
+      x: Math.round(pos.x),
+      y: Math.round(pos.y),
+      xPoints: pixelsToPoints(pos.x),
+      yPoints: pixelsToPoints(pos.y),
+      pageNum: currentPage,
+      id: Date.now()
     };
 
-    // Efficient drawing without triggering re-renders
-    drawCanvas();
-  };
-
-  const handleMouseUp = (e) => {
-    if (!drawingStateRef.current.isDrawing || !drawingStateRef.current.startPos) return;
-
-    const pos = getCanvasCoordinates(e);
-    if (!pos || !drawingStateRef.current.currentRect) return;
-
-    // Get top-left corner coordinates
-    const coords = getTopLeftCoordinates(
-      drawingStateRef.current.currentRect.x1,
-      drawingStateRef.current.currentRect.y1,
-      drawingStateRef.current.currentRect.x2,
-      drawingStateRef.current.currentRect.y2
-    );
-
-    // Only save if rectangle has meaningful size
-    if (coords.width > 5 && coords.height > 5) {
-      const newRect = {
-        ...coords,
-        xPoints: pixelsToPoints(coords.x),
-        yPoints: pixelsToPoints(coords.y),
-        widthPoints: pixelsToPoints(coords.width),
-        heightPoints: pixelsToPoints(coords.height),
-        pageNum: currentPage,
-        id: Date.now()
-      };
-
-      setRectangles(prev => [...prev, newRect]);
-    }
-
-    // Reset drawing state
-    drawingStateRef.current.isDrawing = false;
-    drawingStateRef.current.startPos = null;
-    drawingStateRef.current.currentRect = null;
-
-    // Redraw canvas
+    setSignaturePoints(prev => [...prev, signaturePoint]);
     drawCanvas();
   };
 
 
-  // Delete a rectangle
-  const handleDeleteRect = (id) => {
-    setRectangles(prev => prev.filter(rect => rect.id !== id));
-  };
-
-  // Clear all rectangles on current page
+  // Clear all signature points on current page
   const handleClearPage = () => {
-    setRectangles(prev => prev.filter(rect => rect.pageNum !== currentPage));
+    setSignaturePoints(prev => prev.filter(point => point.pageNum !== currentPage));
   };
 
-  // Efficient canvas drawing function
+  // Handle page jump input
+  const handlePageJump = () => {
+    const pageNum = parseInt(jumpToPage);
+    if (pageNum >= 1 && pageNum <= totalPages) {
+      goToPage(pageNum);
+      setJumpToPage('');
+    }
+  };
+
+  // Handle Enter key press for page jump
+  const handlePageJumpKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      handlePageJump();
+    }
+  };
+
+  // Canvas drawing function for signature points
   const drawCanvas = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -294,91 +230,42 @@ function App() {
     if (!ctx) return;
 
     try {
+      // Clear canvas
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Draw current rectangle being drawn (live feedback) - BRIGHT BLUE
-      if (drawingStateRef.current.currentRect && drawingStateRef.current.isDrawing) {
-        const { x1, y1, x2, y2 } = drawingStateRef.current.currentRect;
-        const minX = Math.min(x1, x2);
-        const minY = Math.min(y1, y2);
-        const width = Math.abs(x2 - x1);
-        const height = Math.abs(y2 - y1);
-
-        // Bright blue semi-transparent fill - highly visible
-        ctx.fillStyle = 'rgba(59, 130, 246, 0.6)'; // Bright blue with 60% opacity
-        ctx.fillRect(minX, minY, width, height);
-
-        // Bold blue border with strong glow
-        ctx.strokeStyle = '#2563eb'; // Bright blue
-        ctx.lineWidth = 5;
-        ctx.setLineDash([]);
-        ctx.shadowColor = '#2563eb';
-        ctx.shadowBlur = 15;
-        ctx.strokeRect(minX, minY, width, height);
-
-        // Yellow inner dashed border for high contrast
-        ctx.shadowBlur = 0;
-        ctx.strokeStyle = '#fbbf24'; // Yellow
-        ctx.lineWidth = 3;
-        ctx.setLineDash([10, 5]);
-        ctx.strokeRect(minX + 2, minY + 2, width - 4, height - 4);
-
-        // Large blue corner handles with yellow borders
-        ctx.fillStyle = '#2563eb';
-        ctx.setLineDash([]);
-        const handleSize = 15;
-
-        // Draw corner handles
-        const corners = [
-          [minX - handleSize/2, minY - handleSize/2],
-          [minX + width - handleSize/2, minY - handleSize/2],
-          [minX - handleSize/2, minY + height - handleSize/2],
-          [minX + width - handleSize/2, minY + height - handleSize/2]
-        ];
-
-        corners.forEach(([x, y]) => {
-          ctx.fillRect(x, y, handleSize, handleSize);
-          ctx.strokeStyle = '#fbbf24';
+      // Draw signature points for current page
+      signaturePoints.forEach((point) => {
+        if (point.pageNum === currentPage) {
+          // Draw a cross marker at the point
+          const crossSize = 10;
+          ctx.strokeStyle = '#dc2626'; // Red color
           ctx.lineWidth = 3;
-          ctx.strokeRect(x, y, handleSize, handleSize);
-        });
-
-        // Show live dimensions with blue background
-        ctx.fillStyle = '#2563eb';
-        ctx.fillRect(minX + width/2 - 45, minY - 35, 90, 28);
-        ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 16px Arial';
-        const dimText = `${width} × ${height}`;
-        ctx.fillText(dimText, minX + width/2 - ctx.measureText(dimText).width/2, minY - 15);
-
-        // Show DocuSign point coordinates with blue background
-        ctx.fillStyle = '#2563eb';
-        ctx.fillRect(minX + 10, minY + 10, 120, 26);
-        ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 14px Arial';
-        const pointX = pixelsToPoints(minX);
-        const pointY = pixelsToPoints(minY);
-        const coordText = `Points: (${pointX}, ${pointY})`;
-        ctx.fillText(coordText, minX + 15, minY + 28);
-      }
-
-      // Draw saved rectangles for current page
-      rectangles.forEach((rect) => {
-        if (rect.pageNum === currentPage) {
-          ctx.strokeStyle = '#10b981';
-          ctx.lineWidth = 2;
           ctx.setLineDash([]);
-          ctx.strokeRect(rect.x, rect.y, rect.width, rect.height);
 
-          // Draw DocuSign point coordinate label
-          ctx.fillStyle = '#10b981';
-          ctx.font = '12px Arial';
-          ctx.fillText(`Points: (${rect.xPoints}, ${rect.yPoints})`, rect.x + 2, rect.y - 5);
+          // Draw cross lines
+          ctx.beginPath();
+          ctx.moveTo(point.x - crossSize, point.y);
+          ctx.lineTo(point.x + crossSize, point.y);
+          ctx.moveTo(point.x, point.y - crossSize);
+          ctx.lineTo(point.x, point.y + crossSize);
+          ctx.stroke();
+
+          // Draw circle around the point
+          ctx.beginPath();
+          ctx.arc(point.x, point.y, 8, 0, 2 * Math.PI);
+          ctx.strokeStyle = '#dc2626';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+
+          // Draw coordinate label
+          ctx.fillStyle = '#dc2626';
+          ctx.font = 'bold 14px Arial';
+          ctx.fillText(`Points: (${point.xPoints}, ${point.yPoints})`, point.x + 15, point.y - 10);
         }
       });
     } catch (error) {
       console.error('Error drawing canvas:', error);
-      // Clear canvas on error to prevent corrupted state
+      // Clear canvas on error
       try {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
       } catch (clearError) {
@@ -387,15 +274,15 @@ function App() {
     }
   };
 
-  // Update canvas when page or rect changes (but not during drawing)
+  // Update canvas when page or signature points change
   useEffect(() => {
     drawCanvas();
-  }, [rectangles, currentPage]);
+  }, [signaturePoints, currentPage]);
 
   return (
     <div className="app">
       <header className="app-header">
-        <h1>PDF Region Selector</h1>
+        <h1>PDF Coordinates Selector</h1>
         {pdfFileName && (
           <div className="file-info">
             <span className="file-name">{pdfFileName}</span>
@@ -403,7 +290,7 @@ function App() {
         )}
         <div className="header-actions">
           {pdfDoc && (
-            <button onClick={handleHome} className="btn btn-secondary">
+            <button onClick={handleHome} className="btn btn-primary">
               🏠 Home
             </button>
           )}
@@ -417,11 +304,6 @@ function App() {
           <label htmlFor="pdf-upload" className="btn btn-primary">
             Upload PDF
           </label>
-          {pdfDoc && rectangles.filter(r => r.pageNum === currentPage).length > 0 && (
-            <button onClick={handleClearPage} className="btn btn-danger">
-              Clear Page
-            </button>
-          )}
         </div>
       </header>
 
@@ -435,10 +317,10 @@ function App() {
           <>
             <div className="sidebar">
               <div className="rectangles-list">
-                <h3>Rectangles on Page {currentPage}</h3>
+                <h3>Signature Points on Page {currentPage}</h3>
                 <div className="coordinate-info">
                   <p className="rectangles-hint">
-                    Click and drag on the PDF to draw rectangles
+                    <strong>Single Click Only:</strong> Click on the PDF where you want to place a signature (no dragging)
                   </p>
                   <div className="docusign-info">
                     <small><strong>DocuSign Points:</strong> 72 DPI coordinate system</small><br/>
@@ -446,46 +328,50 @@ function App() {
                     <small>Conversion: UI pixels → DocuSign points</small>
                   </div>
                 </div>
-                
-                {rectangles.filter(r => r.pageNum === currentPage).length === 0 ? (
-                  <p className="no-rectangles">No rectangles drawn yet</p>
+
+                {signaturePoints.filter(p => p.pageNum === currentPage).length === 0 ? (
+                  <p className="no-rectangles">No signature points placed yet</p>
                 ) : (
                   <div className="rectangle-items">
-                    {rectangles
-                      .filter(r => r.pageNum === currentPage)
-                      .map((rect) => (
-                        <div key={rect.id} className="rectangle-item">
+                    {signaturePoints
+                      .filter(p => p.pageNum === currentPage)
+                      .map((point) => (
+                        <div key={point.id} className="rectangle-item">
                           <div className="rect-info">
                             <div className="rect-coords">
-                              <span className="coord-label">DocuSign Points:</span> ({rect.xPoints}, {rect.yPoints})
-                            </div>
-                            <div className="rect-size">
-                              Size: {rect.widthPoints} × {rect.heightPoints} points
+                              <span className="coord-label">DocuSign Points:</span> ({point.xPoints}, {point.yPoints})
                             </div>
                             <div className="rect-inches">
-                              Inches: ({(rect.xPoints/72).toFixed(2)}", {(rect.yPoints/72).toFixed(2)}")
+                              Inches: ({(point.xPoints/72).toFixed(2)}", {(point.yPoints/72).toFixed(2)}")
                             </div>
                           </div>
-                          <button
-                            onClick={() => handleDeleteRect(rect.id)}
-                            className="btn-delete"
-                            title="Delete rectangle"
-                          >
-                            ×
-                          </button>
+                          <div className="point-status">
+                            <span className="point-checkmark">✓</span>
+                          </div>
                         </div>
                       ))}
                   </div>
                 )}
-                
-                <div className="rectangles-summary">
-                  <div className="summary-item">
-                    <strong>Total on page:</strong> {rectangles.filter(r => r.pageNum === currentPage).length}
+
+                {signaturePoints.filter(p => p.pageNum === currentPage).length > 0 && (
+                  <div className="points-summary">
+                    <div className="summary-item">
+                      <strong>Points on this page:</strong> {signaturePoints.filter(p => p.pageNum === currentPage).length}
+                    </div>
+                    <div className="summary-item">
+                      <strong>Total points:</strong> {signaturePoints.length}
+                    </div>
+                    <div className="clear-action">
+                      <span
+                        onClick={handleClearPage}
+                        className="clear-all-link"
+                        title="Clear all points on this page"
+                      >
+                        Clear All
+                      </span>
+                    </div>
                   </div>
-                  <div className="summary-item">
-                    <strong>Total all pages:</strong> {rectangles.length}
-                  </div>
-                </div>
+                )}
               </div>
             </div>
 
@@ -498,9 +384,29 @@ function App() {
                 >
                   ← Prev
                 </button>
-                <span className="page-info">
-                  Page {currentPage} of {totalPages}
-                </span>
+                <div className="page-navigation">
+                  <span className="page-info">
+                    Page {currentPage} of {totalPages}
+                  </span>
+                  <div className="page-jump">
+                    <input
+                      type="number"
+                      min="1"
+                      max={totalPages}
+                      value={jumpToPage}
+                      onChange={(e) => setJumpToPage(e.target.value)}
+                      onKeyPress={handlePageJumpKeyPress}
+                      className="page-input"
+                    />
+                    <button
+                      onClick={handlePageJump}
+                      className="btn btn-sm btn-secondary"
+                      disabled={!jumpToPage || jumpToPage < 1 || jumpToPage > totalPages}
+                    >
+                      Go
+                    </button>
+                  </div>
+                </div>
                 <button
                   onClick={() => goToPage(currentPage + 1)}
                   disabled={currentPage === totalPages}
@@ -528,19 +434,19 @@ function App() {
                 <canvas
                   ref={canvasRef}
                   className="drawing-canvas"
-                  onMouseDown={handleMouseDown}
-                  onMouseMove={handleMouseMove}
-                  onMouseUp={handleMouseUp}
-                  onMouseLeave={() => {
-                    drawingStateRef.current.isDrawing = false;
-                    drawingStateRef.current.currentRect = null;
-                    drawCanvas();
+                  onClick={handleCanvasClick}
+                  style={{
+                    cursor: 'crosshair',
+                    userSelect: 'none',
+                    WebkitUserSelect: 'none',
+                    MozUserSelect: 'none',
+                    msUserSelect: 'none'
                   }}
                 />
               </div>
 
-              <div className={`drawing-hint ${drawingStateRef.current.isDrawing ? 'drawing-active' : ''}`}>
-                {drawingStateRef.current.isDrawing ? 'Release mouse to complete rectangle' : 'Click and drag to draw a rectangle — Top-left coordinates will appear in the sidebar'}
+              <div className="drawing-hint">
+                Click on the PDF where you want to place a signature — DocuSign coordinates will appear in the sidebar
               </div>
             </div>
           </>
@@ -551,4 +457,5 @@ function App() {
 }
 
 export default App;
+
 
