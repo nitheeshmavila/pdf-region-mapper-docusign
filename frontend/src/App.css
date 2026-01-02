@@ -30,9 +30,22 @@ body {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.header-icon {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+}
+
 .app-header h1 {
   font-size: 1.5rem;
   font-weight: 600;
+  margin: 0;
 }
 
 .file-info {

@@ -282,7 +282,10 @@ function App() {
   return (
     <div className="app">
       <header className="app-header">
-        <h1>PDF Coordinates Selector</h1>
+        <div className="header-left">
+          <img src="/favicon.ico" alt="PDF Coordinates Selector" className="header-icon" />
+          <h1>PDF Coordinates Selector</h1>
+        </div>
         {pdfFileName && (
           <div className="file-info">
             <span className="file-name">{pdfFileName}</span>
