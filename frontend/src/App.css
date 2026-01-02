@@ -141,6 +141,19 @@ body {
   font-size: 0.85rem;
 }
 
+.btn-upload {
+  padding: 1.5rem 4rem;
+  font-size: 1.5rem;
+  font-weight: 600;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.btn-upload:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
 .app-content {
   display: flex;
   flex: 1;
@@ -156,9 +169,11 @@ body {
   color: #6b7280;
 }
 
-.empty-state .hint {
-  margin-top: 0.5rem;
-  font-size: 0.9rem;
+.upload-hint {
+  font-size: 0.875rem;
+  color: #9ca3af;
+  margin: 0;
+  margin-top: 1rem;
 }
 
 .sidebar {

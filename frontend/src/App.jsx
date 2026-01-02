@@ -165,7 +165,10 @@ function App() {
       if (!isFinite(scaleX) || !isFinite(scaleY)) return null;
 
       const x = (e.clientX - rect.left) * scaleX;
-      const y = (e.clientY - rect.top) * scaleY;
+      let y = (e.clientY - rect.top) * scaleY;
+
+      // Apply offset correction (subtract 10 pixels from Y coordinate only)
+      y = Math.max(0, y - 10);
 
       // Validate coordinates
       if (!isFinite(x) || !isFinite(y)) return null;
@@ -297,24 +300,23 @@ function App() {
               🏠 Home
             </button>
           )}
-          <input
-            type="file"
-            accept="application/pdf"
-            onChange={handleFileUpload}
-            id="pdf-upload"
-            style={{ display: 'none' }}
-          />
-          <label htmlFor="pdf-upload" className="btn btn-primary">
-            Upload PDF
-          </label>
         </div>
       </header>
 
       <div className="app-content">
         {!pdfDoc ? (
           <div className="empty-state">
-            <p>Upload a PDF to get started</p>
-            <p className="hint">Draw rectangles on the PDF pages to see coordinates</p>
+            <input
+              type="file"
+              accept="application/pdf"
+              onChange={handleFileUpload}
+              id="pdf-upload"
+              style={{ display: 'none' }}
+            />
+            <label htmlFor="pdf-upload" className="btn btn-primary btn-upload">
+              📄 Upload PDF
+            </label>
+            <p className="upload-hint">Upload a PDF to get started</p>
           </div>
         ) : (
           <>
