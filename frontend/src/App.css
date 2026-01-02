@@ -238,6 +238,26 @@ body {
   font-family: 'Courier New', monospace;
 }
 
+.rect-inches {
+  font-size: 0.75rem;
+  color: #9ca3af;
+  margin-top: 0.125rem;
+  font-family: 'Courier New', monospace;
+}
+
+.docusign-info {
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  background: #f3f4f6;
+  border-radius: 4px;
+  border: 1px solid #e5e7eb;
+}
+
+.docusign-info small {
+  line-height: 1.4;
+  color: #6b7280;
+}
+
 .btn-delete {
   background: #ef4444;
   color: white;
