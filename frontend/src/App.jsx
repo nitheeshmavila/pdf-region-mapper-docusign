@@ -4,6 +4,7 @@ import './App.css';
 
 function App() {
   const [pdfFile, setPdfFile] = useState(null);
+  const [pdfFileName, setPdfFileName] = useState(null);
   const [pdfDoc, setPdfDoc] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
@@ -22,19 +23,33 @@ function App() {
     if (!file) return;
 
     setPdfFile(file);
+    setPdfFileName(file.name);
     const arrayBuffer = await file.arrayBuffer();
-    
+
     // Initialize pdf.js
     const pdfjsLib = await import('pdfjs-dist');
     pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
-    
+
     const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
     const pdf = await loadingTask.promise;
-    
+
     setPdfDoc(pdf);
     setTotalPages(pdf.numPages);
     setCurrentPage(1);
     setRectangles([]);
+  };
+
+  // Reset to home state (clear PDF and all data)
+  const handleHome = () => {
+    setPdfFile(null);
+    setPdfFileName(null);
+    setPdfDoc(null);
+    setCurrentPage(1);
+    setTotalPages(0);
+    setRectangles([]);
+    setCurrentRect(null);
+    setIsDrawing(false);
+    setStartPos(null);
   };
 
   // Handle page change
@@ -82,11 +97,11 @@ function App() {
   const getCanvasCoordinates = (e) => {
     const canvas = canvasRef.current;
     if (!canvas) return null;
-    
+
     const rect = canvas.getBoundingClientRect();
     const scaleX = canvas.width / rect.width;
     const scaleY = canvas.height / rect.height;
-    
+
     return {
       x: (e.clientX - rect.left) * scaleX,
       y: (e.clientY - rect.top) * scaleY
@@ -118,10 +133,10 @@ function App() {
 
   const handleMouseUp = (e) => {
     if (!isDrawing || !startPos) return;
-    
+
     const pos = getCanvasCoordinates(e);
     if (!pos || !currentRect) return;
-    
+
     // Get top-left corner coordinates
     const coords = getTopLeftCoordinates(
       currentRect.x1,
@@ -129,7 +144,7 @@ function App() {
       currentRect.x2,
       currentRect.y2
     );
-    
+
     // Only save if rectangle has meaningful size
     if (coords.width > 5 && coords.height > 5) {
       const newRect = {
@@ -137,14 +152,15 @@ function App() {
         pageNum: currentPage,
         id: Date.now()
       };
-      
+
       setRectangles(prev => [...prev, newRect]);
     }
-    
+
     setIsDrawing(false);
     setStartPos(null);
     setCurrentRect(null);
   };
+
 
   // Delete a rectangle
   const handleDeleteRect = (id) => {
@@ -236,10 +252,10 @@ function App() {
         ctx.setLineDash([]);
         ctx.strokeRect(rect.x, rect.y, rect.width, rect.height);
 
-        // Draw coordinate label
+        // Draw coordinate label showing top-left X,Y
         ctx.fillStyle = '#10b981';
         ctx.font = '12px Arial';
-        ctx.fillText(`(${rect.x}, ${rect.y})`, rect.x + 2, rect.y - 5);
+        ctx.fillText(`X: ${rect.x}, Y: ${rect.y}`, rect.x + 2, rect.y - 5);
       }
     });
   }, [currentRect, rectangles, currentPage, isDrawing]);
@@ -248,7 +264,17 @@ function App() {
     <div className="app">
       <header className="app-header">
         <h1>PDF Region Selector</h1>
+        {pdfFileName && (
+          <div className="file-info">
+            <span className="file-name">{pdfFileName}</span>
+          </div>
+        )}
         <div className="header-actions">
+          {pdfDoc && (
+            <button onClick={handleHome} className="btn btn-secondary">
+              🏠 Home
+            </button>
+          )}
           <input
             type="file"
             accept="application/pdf"
@@ -291,14 +317,11 @@ function App() {
                       .map((rect) => (
                         <div key={rect.id} className="rectangle-item">
                           <div className="rect-info">
-                            <div className="rect-label">Top-Left Corner:</div>
                             <div className="rect-coords">
-                              <span className="coord-label">X:</span> {rect.x}px
-                              <span className="coord-separator">|</span>
-                              <span className="coord-label">Y:</span> {rect.y}px
+                              <span className="coord-label">Top-Left:</span> X: {rect.x}, Y: {rect.y}
                             </div>
                             <div className="rect-size">
-                              {rect.width} × {rect.height} px
+                              Size: {rect.width} × {rect.height} px
                             </div>
                           </div>
                           <button

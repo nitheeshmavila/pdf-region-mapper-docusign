@@ -35,6 +35,22 @@ body {
   font-weight: 600;
 }
 
+.file-info {
+  display: flex;
+  align-items: center;
+  margin-left: 2rem;
+}
+
+.file-name {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #e5e7eb;
+  padding: 0.5rem 1rem;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
 .header-actions {
   display: flex;
   gap: 1rem;
@@ -69,6 +85,15 @@ body {
 
 .btn-primary:hover:not(:disabled) {
   background: #f0f0f0;
+}
+
+.btn-secondary {
+  background: #6b7280;
+  color: white;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: #4b5563;
 }
 
 .btn-success {
@@ -301,12 +326,14 @@ body {
 
 .drawing-canvas {
   position: absolute;
-  top: 0;
-  left: 0;
+  top: 2rem;  /* Match pdf-container padding-top */
+  left: 50%;
+  transform: translateX(-50%);
   pointer-events: auto;
   cursor: crosshair;
   background: transparent;
   z-index: 2;
+  max-width: 800px;
 }
 
 .drawing-hint {
@@ -332,5 +359,123 @@ body {
 
 .drawing-hint.drawing-active strong {
   color: #92400e;
+}
+
+/* Field List Styles */
+.field-list {
+  background: white;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.field-list h3 {
+  margin-bottom: 0.5rem;
+  color: #1f2937;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.field-list-hint {
+  font-size: 0.85rem;
+  color: #6b7280;
+  margin-bottom: 1rem;
+}
+
+.field-items {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.field-item {
+  padding: 0.75rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: white;
+}
+
+.field-item:hover {
+  border-color: #d1d5db;
+  background: #f9fafb;
+}
+
+.field-item.selected {
+  border-color: #3b82f6;
+  background: #eff6ff;
+  box-shadow: 0 0 0 1px #3b82f6;
+}
+
+.field-item.unmapped {
+  border-color: #e5e7eb;
+}
+
+.field-item.mapped-current {
+  border-color: #10b981;
+  background: #ecfdf5;
+}
+
+.field-item.mapped-other {
+  border-color: #f59e0b;
+  background: #fffbeb;
+}
+
+.field-name {
+  font-weight: 500;
+  color: #1f2937;
+  margin-bottom: 0.25rem;
+}
+
+.field-mapping-info {
+  font-size: 0.8rem;
+  color: #6b7280;
+  font-family: monospace;
+}
+
+.field-badge {
+  float: right;
+  background: #10b981;
+  color: white;
+  padding: 0.125rem 0.375rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.field-legend {
+  border-top: 1px solid #e5e7eb;
+  padding-top: 1rem;
+  margin-top: 1rem;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: #6b7280;
+  margin-bottom: 0.25rem;
+}
+
+.legend-color {
+  width: 16px;
+  height: 16px;
+  border-radius: 2px;
+}
+
+.legend-color.unmapped {
+  background: #e5e7eb;
+}
+
+.legend-color.mapped-other {
+  background: #f59e0b;
+}
+
+.legend-color.mapped-current {
+  background: #10b981;
 }
 
